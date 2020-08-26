@@ -25,19 +25,19 @@ client_socket.send(USERNAME.encode())
 print("You have entered the chat!")
 print("Send 'bye' to stop chatting.", end="\n\n")
 
-# the TCP handshake is initiated by client from the server_port
-# but once connection is established on a random port by the server
-# all further communication is conducted via that port until closed
-
 while True:
     try:
-        # select which medium of input to select: stdin or socket
+        # the input 'select' code is inspired from
+        # https://www.geeksforgeeks.org/simple-chat-room-using-python/
+        # lines 35-36, 49, 59-60
+
+        # select which medium of input
         sockets_list = [sys.stdin, client_socket]
         read_sockets, _, _ = select.select(sockets_list, [], [])
 
-        for socks in read_sockets:
-            if socks == client_socket:
-                message: str = socks.recv(2048).decode()
+        for input_src in read_sockets:
+            if input_src == client_socket:
+                message: str = client_socket.recv(2048).decode()
                 print(message)
 
                 if message == "__SERVER_ERROR__":

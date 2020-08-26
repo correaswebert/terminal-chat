@@ -28,6 +28,8 @@ peers = []
 
 def newUser(conn_socket: socket):
     name: str = conn_socket.recv(1024).decode()
+
+    # alert peers about new connection
     for peer in peers:
         if peer != conn_socket:
             peer.send(f"{name} has joined the chat\n".encode())
@@ -35,7 +37,6 @@ def newUser(conn_socket: socket):
     while True:
         # receive the message and broadcast it in the network
         msg: str = conn_socket.recv(1024).decode()
-
         time = datetime.now().strftime("%H:%M:%S")
 
         # broadcast the data to all peers in the network
@@ -47,10 +48,7 @@ def newUser(conn_socket: socket):
         # terminate server-side connection with user
         if msg == "bye\n":
             peers.remove(conn_socket)
-
             conn_socket.close()
-
-            print(f"{name} left the chat")
             return
 
 
@@ -66,9 +64,12 @@ while True:
         Thread(target=newUser, args=(conn_socket,)).start()
 
     except KeyboardInterrupt:
+        # alert clients to close their connection
         for peer in peers:
             peer.send("__SERVER_ERROR__".encode())
 
         server_socket.close()
         print("Server has stopped listening.")
+
+        # current process is stopped, any spawned threads are also killed
         os._exit(0)
