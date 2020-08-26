@@ -2,8 +2,6 @@ import sys
 import select
 from socket import socket, AF_INET, SOCK_STREAM
 
-from curses_trial import ChatScreen
-
 # invalid arguments
 if len(sys.argv) < 3:
     print("Invalid inputs. Please stick to the format shown below.")
@@ -24,12 +22,12 @@ client_socket.connect((SERVER_NAME, SERVER_PORT))
 
 # send username before broadcasting begins
 client_socket.send(USERNAME.encode())
+print("You have entered the chat!")
+print("Send 'bye' to stop chatting.", end="\n\n")
 
 # the TCP handshake is initiated by client from the server_port
 # but once connection is established on a random port by the server
 # all further communication is conducted via that port until closed
-
-chat_screen = ChatScreen()
 
 while True:
     try:
@@ -40,7 +38,12 @@ while True:
         for socks in read_sockets:
             if socks == client_socket:
                 message: str = socks.recv(2048).decode()
-                print(message, end='')
+                print(message)
+
+                if message == "__SERVER_ERROR__":
+                    client_socket.close()
+                    sys.stdout.flush()
+                    sys.exit(0)
 
             else:
                 message = sys.stdin.readline()
@@ -53,8 +56,7 @@ while True:
                     sys.stdout.flush()
                     sys.exit(0)
 
-                sys.stdout.write("You: ")
-                sys.stdout.write(message)
+                sys.stdout.write('\n')
                 sys.stdout.flush()
 
     except KeyboardInterrupt:

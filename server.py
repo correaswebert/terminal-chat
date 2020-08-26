@@ -1,4 +1,6 @@
 import sys
+import os
+from datetime import datetime
 from threading import Thread
 from socket import socket, AF_INET, SOCK_STREAM
 
@@ -26,22 +28,24 @@ peers = []
 
 def newUser(conn_socket: socket):
     name: str = conn_socket.recv(1024).decode()
-    # msg: str = ...
+    for peer in peers:
+        if peer != conn_socket:
+            peer.send(f"{name} has joined the chat\n".encode())
 
     while True:
         # receive the message and broadcast it in the network
         msg: str = conn_socket.recv(1024).decode()
 
-        # time = datetime.now().strftime("%H:%M:%S")
+        time = datetime.now().strftime("%H:%M:%S")
 
         # broadcast the data to all peers in the network
         for peer in peers:
             if peer != conn_socket:
-                peer.send(f"{name}: {msg}".encode())
+                timed_msg = f"[{time}] {name}\n" + msg
+                peer.send(timed_msg.encode())
 
         # terminate server-side connection with user
         if msg == "bye\n":
-            # XXX: may need to apply mutex here
             peers.remove(conn_socket)
 
             conn_socket.close()
@@ -56,13 +60,15 @@ while True:
         # once accepted, a random port is assigned for further communication
         conn_socket, _ = server_socket.accept()
 
-        # XXX: may need to apply mutex here
         peers.append(conn_socket)
 
         # create a thread and start its execution
         Thread(target=newUser, args=(conn_socket,)).start()
 
     except KeyboardInterrupt:
+        for peer in peers:
+            peer.send("__SERVER_ERROR__".encode())
+
         server_socket.close()
         print("Server has stopped listening.")
-        break
+        os._exit(0)
